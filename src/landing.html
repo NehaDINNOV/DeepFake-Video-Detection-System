@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Detect Fake Content</title>
+  <link rel="stylesheet" href="landing.css">
+</head>
+<!-- 🔥 AI SCANNING OVERLAY -->
+<div id="scanOverlay">
+  <div class="scanner-box">
+    <div class="scan-line"></div>
+    <p>Analyzing Content...</p>
+  </div>
+</div>
+
+<body>
+
+<!-- 🔥 FLOWING BACKGROUND -->
+<div class="bg-flow"></div>
+
+<!-- 🔥 MAIN CARD -->
+<div class="glass-card">
+
+  <h1>Detect Fake Content</h1>
+
+  <!-- TYPE SELECT -->
+  <div class="type-select">
+    <button onclick="selectType('image')" id="imgBtn">Upload Image</button>
+    <button onclick="selectType('video')" id="vidBtn">Upload Video</button>
+  </div>
+
+  <!-- FILE INPUT -->
+  <input type="file" id="fileInput" hidden>
+
+  <!-- UPLOAD BUTTON -->
+  
+
+  <!-- DETECT BUTTON -->
+  <button class="detect-btn" onclick="startScan()">Detect</button>
+
+</div>
+
+<script>
+let selectedType = "";
+
+/* SELECT TYPE */
+function selectType(type) {
+  selectedType = type;
+
+  document.getElementById("imgBtn").classList.remove("active");
+  document.getElementById("vidBtn").classList.remove("active");
+
+  if(type === "image") {
+    document.getElementById("imgBtn").classList.add("active");
+    document.querySelector(".upload-btn").innerText = "Upload Image";
+  } else {
+    document.getElementById("vidBtn").classList.add("active");
+    document.querySelector(".upload-btn").innerText = "Upload Video";
+  }
+}
+
+/* OPEN FILE */
+function uploadFile() {
+  document.getElementById("fileInput").click();
+}
+function startScan() {
+  const overlay = document.getElementById("scanOverlay");
+
+  overlay.classList.add("active");
+
+  // simulate AI processing
+  setTimeout(() => {
+    overlay.classList.remove("active");
+
+    alert("Analysis Complete ✅"); // later replace with result page
+  }, 3000);
+}
+</script>
+
+</body>
+</html>
