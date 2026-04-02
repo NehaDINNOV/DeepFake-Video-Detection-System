@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TruthLens — DeepFake Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- ── Noise overlay ──────────────────────────────────────────────────── -->
+<div class="noise"></div>
+
+<!-- ── Header ────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="12" stroke="#E8FF47" stroke-width="1.5"/>
+          <path d="M8 14 L12 18 L20 10" stroke="#E8FF47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="14" cy="14" r="4" fill="none" stroke="#E8FF47" stroke-width="1" stroke-dasharray="2 2"/>
+        </svg>
+      </span>
+      <span class="logo-text">TruthLens</span>
+      <span class="logo-tag">deepfake detection</span>
+    </div>
+    <nav class="nav-pills">
+      <span class="pill pill-active">Analyse</span>
+      <a href="#how" class="pill">How it works</a>
+      <div class="status-dot" id="status-dot" title="System status">
+        <span class="dot"></span>
+        <span class="status-label" id="status-label">checking</span>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-content">
+    <div class="badge-row">
+      <span class="badge">XceptionNet</span>
+      <span class="badge">EfficientNet-B4</span>
+      <span class="badge">DCT Frequency</span>
+      <span class="badge badge-accent">Grad-CAM++</span>
+    </div>
+    <h1 class="hero-title">
+      Is this face<br><em>real or synthetic?</em>
+    </h1>
+    <p class="hero-sub">
+      Upload an image or video. Our 2-model ensemble analyses spatial artifacts,
+      frequency fingerprints and generates heatmaps showing exactly what's suspicious.
+    </p>
+  </div>
+</section>
+
+<!-- ── Upload zone ───────────────────────────────────────────────────── -->
+<main class="main">
+  <div class="upload-card" id="upload-card">
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-icon">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <rect x="4" y="8" width="40" height="32" rx="4" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <path d="M24 18 L24 30" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M18 24 L24 18 L30 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16 36 L32 36" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-opacity="0.4"/>
+        </svg>
+      </div>
+      <p class="drop-title">Drop image or video here</p>
+      <p class="drop-sub">PNG · JPG · MP4 · AVI · MOV up to 100 MB</p>
+      <label class="btn-upload" for="file-input">Browse file</label>
+      <input type="file" id="file-input" accept="image/*,video/*" hidden>
+    </div>
+
+    <!-- Options -->
+    <div class="options-row">
+      <div class="option-group">
+        <label class="opt-label" for="n-frames">Frames to analyse</label>
+        <div class="stepper">
+          <button class="step-btn" id="dec-frames">−</button>
+          <span id="n-frames-val">8</span>
+          <button class="step-btn" id="inc-frames">+</button>
+        </div>
+      </div>
+      <div class="option-group">
+        <label class="opt-label">LLaVA explanation</label>
+        <label class="toggle">
+          <input type="checkbox" id="use-llava">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span class="toggle-text" id="llava-txt">Off</span>
+        </label>
+      </div>
+      <div class="option-group" style="margin-left:auto">
+        <button class="btn-analyse" id="btn-analyse" disabled>
+          <span id="btn-text">Select a file first</span>
+          <svg class="btn-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Progress bar ────────────────────────────────────────────────── -->
+  <div class="progress-wrap" id="progress-wrap" hidden>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+    <p class="progress-msg" id="progress-msg">Initialising...</p>
+  </div>
+
+  <!-- ── Results panel ───────────────────────────────────────────────── -->
+  <section class="results" id="results" hidden>
+
+    <!-- Verdict card -->
+    <div class="verdict-card" id="verdict-card">
+      <div class="verdict-left">
+        <div class="verdict-label" id="verdict-label">ANALYSING</div>
+        <div class="verdict-prob" id="verdict-prob">—%</div>
+        <div class="verdict-meta" id="verdict-meta"></div>
+      </div>
+      <div class="verdict-gauge-wrap">
+        <svg class="gauge" viewBox="0 0 160 90" width="160" height="90">
+          <path d="M10 80 A70 70 0 0 1 150 80" fill="none" stroke="#222" stroke-width="12" stroke-linecap="round"/>
+          <path id="gauge-arc" d="M10 80 A70 70 0 0 1 150 80" fill="none" stroke="#E8FF47" stroke-width="12"
+                stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="220"/>
+          <text x="80" y="78" text-anchor="middle" font-size="11" fill="#888" font-family="DM Mono">FAKE PROBABILITY</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Model comparison row -->
+    <div class="model-row" id="model-row" hidden>
+      <div class="model-card">
+        <div class="model-name">XceptionNet</div>
+        <div class="model-desc">Spatial + blending artifacts</div>
+        <div class="model-bar-wrap">
+          <div class="model-bar" id="bar-xcp"></div>
+        </div>
+        <div class="model-prob" id="prob-xcp">—%</div>
+      </div>
+      <div class="model-divider"></div>
+      <div class="model-card">
+        <div class="model-name">EfficientNet-B4 + DCT</div>
+        <div class="model-desc">Frequency fingerprints</div>
+        <div class="model-bar-wrap">
+          <div class="model-bar model-bar-eff" id="bar-eff"></div>
+        </div>
+        <div class="model-prob" id="prob-eff">—%</div>
+      </div>
+    </div>
+
+    <!-- Frame timeline (video only) -->
+    <div class="timeline-wrap" id="timeline-wrap" hidden>
+      <h3 class="section-label">Frame-by-frame analysis</h3>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <!-- Heatmap panel -->
+    <div class="heatmap-panel" id="heatmap-panel" hidden>
+      <h3 class="section-label">Grad-CAM++ evidence maps</h3>
+      <div class="heatmap-tabs">
+        <button class="htab htab-active" data-tab="overlay">Ensemble overlay</button>
+        <button class="htab" data-tab="xcp">XceptionNet</button>
+        <button class="htab" data-tab="eff">EfficientNet-B4</button>
+        <button class="htab" data-tab="original">Original</button>
+      </div>
+      <div class="heatmap-imgs">
+        <img class="heatmap-img htab-img active" data-tab="overlay" id="img-overlay" src="" alt="Grad-CAM overlay">
+        <img class="heatmap-img htab-img" data-tab="xcp" id="img-xcp" src="" alt="XceptionNet CAM">
+        <img class="heatmap-img htab-img" data-tab="eff" id="img-eff" src="" alt="EfficientNet CAM">
+        <img class="heatmap-img htab-img" data-tab="original" id="img-original" src="" alt="Original">
+      </div>
+      <p class="heatmap-legend">
+        <span class="legend-hot">■</span> High model attention &nbsp;
+        <span class="legend-cold">■</span> Low attention &nbsp;—&nbsp;
+        Red regions are where the model found the strongest evidence of manipulation.
+      </p>
+    </div>
+
+    <!-- LLaVA explanation -->
+    <div class="explanation-card" id="explanation-card" hidden>
+      <div class="expl-header">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="7.5" stroke="#E8FF47" stroke-width="1.2"/>
+          <path d="M6.5 7C6.5 5.62 7.62 4.5 9 4.5C10.38 4.5 11.5 5.62 11.5 7C11.5 8.1 10.84 9.04 9.9 9.46C9.38 9.7 9 10.2 9 10.77V11.5" stroke="#E8FF47" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="9" cy="13.5" r="0.75" fill="#E8FF47"/>
+        </svg>
+        <span>LLaVA forensic explanation</span>
+        <span class="expl-badge">AI-generated</span>
+      </div>
+      <div class="expl-body" id="expl-body"></div>
+    </div>
+
+  </section>
+
+  <!-- ── How it works ─────────────────────────────────────────────────── -->
+  <section class="how-section" id="how">
+    <h2 class="how-title">How it works</h2>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">01</div>
+        <h3>Frame extraction</h3>
+        <p>Videos are split into evenly-spaced frames. Images are used directly. Each frame is resized to 299×299.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">02</div>
+        <h3>Dual-model ensemble</h3>
+        <p>XceptionNet catches spatial blending artifacts. EfficientNet-B4 with a DCT branch catches GAN/diffusion frequency fingerprints.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">03</div>
+        <h3>Grad-CAM++ heatmaps</h3>
+        <p>Gradient-weighted class activation maps reveal exactly which facial regions influenced the decision — eyes, hairline, skin boundaries.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">04</div>
+        <h3>LLaVA explanation</h3>
+        <p>The original face and heatmap are sent to Ollama/LLaVA which provides a forensic plain-English explanation of the detected artifacts.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span>TruthLens © 2025</span>
+  <span>XceptionNet + EfficientNet-B4 + DCT + Grad-CAM++ + LLaVA</span>
+</footer>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>
